@@ -1,30 +1,15 @@
-// ********************************
-// This groovy script updates the summary to remove urgent
-// and email generated fields (see both token lists below)
-//
-// Created By: Mike Burns
-// Last Updated By: Mike Burns
-//*********************************
-
-logger.info("Event -> ${issue_event_type_name}")
-
-def issueKey = issue.key
-
-// Fix summaries that include unhelpful text
+logger.trace("Event -> ${issue_event_type_name}")
 def summary = issue.fields.summary
 while (summary != null) {
     def madeChange = false
     try {
-        def tokens = ["not urgent", "Semi-Urgent", "URGENT"]
-        tokens.each { String token ->
+        ["not urgent", "Semi-Urgent", "URGENT"].each { String token ->
             if (summary != summary.replaceAll("(?i)" + token, " ")) {
                 summary = summary.replaceAll("(?i)" + token, " ")
                 madeChange = true
             }
         }
-
-        tokens = ["FW:", "FWD:", "RE:", "not urgent", "Semi-Urgent", "URGENT", "!", "=", "-", ":", "*", "."]
-        tokens.each { String token ->
+        ["FW:", "FWD:", "RE:", "not urgent", "Semi-Urgent", "URGENT", "!", "=", "-", ":", "*", "."].each { String token ->
             if (summary != summary.trim()) {
                 summary = summary.trim()
                 madeChange = true
@@ -49,16 +34,11 @@ while (summary != null) {
     if (!madeChange) break
 }
 if (summary != issue.fields.summary) {
-    logger.info("Updating summary -> ${issue.fields.summary} to ${summary}")
-    def result = Unirest.put("/rest/api/2/issue/${issueKey}?notifyUsers=false")
+    def result = Unirest.put("/rest/api/2/issue/${issue.key}?notifyUsers=false")
         .header("Content-Type", "application/json")
-        .body([
-            fields: [
-                summary: summary
-            ],
-        ])
+        .body([ fields: [ summary: summary ], ])
         .asString()
     assert result.status >= 200 && result.status < 300
+    logger.info("Updated summary -> ${issue.fields.summary} to ${summary}")
 }
-
-logger.info("Event -> ${issue_event_type_name} - Completed")
+logger.trace("Event -> ${issue_event_type_name} - Completed")

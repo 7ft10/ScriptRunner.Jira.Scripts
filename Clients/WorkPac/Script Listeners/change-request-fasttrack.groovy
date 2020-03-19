@@ -1,17 +1,4 @@
-// ********************************
-// This groovy script fast tracks low risk standard change requests.
-//
-// Created By: Mike Burns
-// Last Updated By: Mike Burns
-//*********************************
-
-String.metaClass.encodeURL = {
-    java.net.URLEncoder.encode(delegate, "UTF-8")
-}
-
-logger.info("Event -> ${issue_event_type_name}")
-
-def issueKey = issue.key
+logger.trace("Event -> ${issue_event_type_name}")
 
 def customFields = Unirest.get("/rest/api/2/field")
     .asObject(List)
@@ -24,26 +11,22 @@ if (riskLevelField != null && requesttypeField != null) {
 
     def riskLevelValue = (issue.fields[riskLevelField.id] as Map)?.value
     def requesttypeValue = (issue.fields[requesttypeField.id] as Map)?.requestType?.name
-    def changeRequired =
-                    !(
-                        requesttypeValue == "Standard Change Request"
-                        && ["Backlog", "To Do"].contains(issue.fields.status.name)
-                        && ["Low", "Medium"].contains(riskLevelValue)
-                    )
-
+    def changeRequired = !(
+                            requesttypeValue == "Standard Change Request"
+                            && ["Backlog", "To Do"].contains(issue.fields.status.name)
+                            && ["Low", "Medium"].contains(riskLevelValue)
+                        )
     if (changeRequired) {
         logger.info("No transition required -> ${requesttypeValue}, ${issue.fields.status.name}, ${riskLevelValue}")
-        logger.info("Event -> ${issue_event_type_name}")
+        logger.trace("Event -> ${issue_event_type_name} -> Completed")
         return
     }
-
-    def trans = (Unirest.get("/rest/api/2/issue/${issueKey}/transitions")
+    def trans = (Unirest.get("/rest/api/2/issue/${issue.key}/transitions")
         .asObject(Map)
         .body).transitions.find { (issue.fields.status.name == "Backlog" && it.to.name == "To Do") || (issue.fields.status.name == "To Do" && it.to.name == "Awaiting approval") }
 
     if (trans != null) {
-        logger.info("Transition issue to -> ${trans}")
-        def result = Unirest.post("/rest/api/2/issue/${issueKey}/transitions")
+        def result = Unirest.post("/rest/api/2/issue/${issue.key}/transitions")
             .header("Content-Type", "application/json")
             .body([
                 "transition": [
@@ -57,10 +40,9 @@ if (riskLevelField != null && requesttypeField != null) {
         } else {
             logger.error("Failed to transition to ${trans}")
         }
-
         try {
             if (issue.fields.status.name == "Backlog") {
-                def comment = Unirest.post("/rest/servicedeskapi/request/${issueKey}/comment?notifyUsers=false")
+                def comment = Unirest.post("/rest/servicedeskapi/request/${issue.key}/comment?notifyUsers=false")
                     .header("Content-Type", "application/json")
                     .body([
                         public: true,
@@ -76,3 +58,5 @@ if (riskLevelField != null && requesttypeField != null) {
         }
     }
 }
+
+logger.trace("Event -> ${issue_event_type_name} -> Completed")

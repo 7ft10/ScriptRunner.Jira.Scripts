@@ -6,7 +6,8 @@
 // Last Updated By: Mike Burns
 //*********************************
 
-logger.info("Event info: Scheduled Job - Component Sync")
+def debug = (DEBUG_MODE == "true"); /* No access to logger levels -> workaround */ logger.metaClass.invokeMethod { name, args -> logger.metaClass.getMetaMethod(name, args)?.invoke(delegate, args); if ((name == "debug" || name == "trace") && debug == true) { def prefix = "** "; if (name == "trace") prefix = "## "; if (args.size() == 1) args[0] = prefix + args[0] else args = [prefix, *args]; logger.metaClass.getMetaMethod("info", args).invoke(logger, args); } }
+logger.trace("Event info: Scheduled Job - Component Sync")
 
 def projectCategories = ((List<Map>) Unirest.get("/rest/api/2/projectCategory")
     .header('Content-Type', 'application/json')
@@ -25,11 +26,8 @@ def masterProjectKey = ((Map)get("/rest/api/2/project/search?orderBy=category&ex
     .asObject(Map)
     .body)
     .values
-    .collect { it.key.toString() }[0]
-
-logger.info("masterProjectKey=${masterProjectKey}")
-
-logger.info("Master project: ${masterProjectKey}")
+    .collect  { it.key.toString() }[0]
+logger.debug("Master project: ${masterProjectKey}")
 
 def masterComponents = ((List<Map<String, Map>>) Unirest.get("/rest/api/2/project/${masterProjectKey}/components")
     .header('Content-Type', 'application/json')
@@ -43,7 +41,6 @@ def masterComponents = ((List<Map<String, Map>>) Unirest.get("/rest/api/2/projec
     ]}
 
 def squadCategoryId = (projectCategories.find { (it as Map).name == 'Technology Squad' } as Map).id
-
 def targetProjectCodes = ((Map)get("/rest/api/2/project/search?orderBy=category&expand=projectKeys&categoryId=${squadCategoryId}")
     .header('Content-Type', 'application/json')
     .asObject(Map)
@@ -51,10 +48,9 @@ def targetProjectCodes = ((Map)get("/rest/api/2/project/search?orderBy=category&
     .values
     .collect { it.key.toString() }
 
-logger.info("targetProjectCodes=${targetProjectCodes}")
+logger.debug("Target Project Codes: ${targetProjectCodes}")
 
 targetProjectCodes.each { String projectCode ->
-
     def projectComponents = ((List<Map<String, Map>>) Unirest.get("/rest/api/2/project/${projectCode}/components")
         .header('Content-Type', 'application/json')
         .asObject(List)
@@ -71,7 +67,6 @@ targetProjectCodes.each { String projectCode ->
         def descriptionPrefix = "Please see master component list for details -> id: ${masterComponent.id}"
         if (projectComponent == null) {
             // create
-            logger.info("Create component: ${masterComponent.name}")
             def newComponent = (Map) masterComponent.clone()
             newComponent.put("project", projectCode)
             newComponent.put("description", descriptionPrefix)
@@ -80,14 +75,13 @@ targetProjectCodes.each { String projectCode ->
                 .body(newComponent)
                 .asString()
             assert result.status >= 200 && result.status < 300
-            logger.info("Created.")
+            logger.info("Created component: ${masterComponent.name}")
         } else {
             if (projectComponent.description == descriptionPrefix) {
                 // ok
                 logger.info("Component: ${masterComponent.name} ok")
             } else {
                 // update
-                logger.info("Update component: ${masterComponent.name}")
                 def newComponent = (Map) projectComponent.clone()
                 newComponent.put("description", descriptionPrefix)
                 def result = Unirest.put("/rest/api/2/component/${projectComponent.id}")
@@ -95,7 +89,7 @@ targetProjectCodes.each { String projectCode ->
                     .body(newComponent)
                     .asString()
                 assert result.status >= 200 && result.status < 300
-                logger.info("Updated.")
+                logger.info("Updated component: ${masterComponent.name}")
             }
             projectComponents.remove(projectComponent)
         }
@@ -109,12 +103,11 @@ targetProjectCodes.each { String projectCode ->
 
         if (related.issueCount == 0) {
             // delete
-            logger.info("Delete component: ${pc.name}")
             def result = Unirest.delete("/rest/api/2/component/${pc.id}")
                 .header("Content-Type", "application/json")
                 .asString()
             assert result.status >= 200 && result.status < 300
-            logger.info("Deleted.")
+            logger.info("Deleted Component: ${pc.name}")
         } else {
             if (pc.name.endsWith("- NOT IN MASTER - DELETE")) {
                 // cannot delete issues attached
@@ -122,17 +115,15 @@ targetProjectCodes.each { String projectCode ->
             } else {
                 // update name
                 def newName = pc.name + "- NOT IN MASTER - DELETE"
-                logger.warn("Unable to delete component ${pc.name} -> updating name to ${newName}")
-                def newComponent = ["name": newName]
                 def result = Unirest.put("/rest/api/2/component/${pc.id}")
                     .header("Content-Type", "application/json")
-                    .body(newComponent)
+                    .body(["name": newName])
                     .asString()
                 assert result.status >= 200 && result.status < 300
-                logger.info("Updated.")
+                logger.info("Updated Component -> ${newName}")
             }
         }
     }
 }
 
-logger.info("Event info: Scheduled Job - Component Sync - Completed")
+logger.trace("Event info: Scheduled Job - Component Sync - Completed")

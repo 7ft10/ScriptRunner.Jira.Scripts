@@ -5,9 +5,10 @@
 // Last Updated By:
 //*********************************
 
-def event_name = "THIS IS NOT SUPPLIED FOR SCHEDULED JOBS"
+def debug = (DEBUG_MODE == "true"); /* No access to logger levels -> workaround */ logger.metaClass.invokeMethod { name, args -> logger.metaClass.getMetaMethod(name, args)?.invoke(delegate, args); if ((name == "debug" || name == "trace") && debug == true) { def prefix = "** "; if (name == "trace") prefix = "## "; if (args.size() == 1) args[0] = prefix + args[0] else args = [prefix, *args]; logger.metaClass.getMetaMethod("info", args).invoke(logger, args); } }
 
-logger.info("Event -> ${event_name}")
+def event_name = "THIS IS NOT SUPPLIED FOR SCHEDULED JOBS"
+logger.trace("Event -> ${event_name}")
 
 def query = 'JQL'
 
@@ -19,9 +20,9 @@ assert searchReq.status == 200
 Map searchResult = searchReq.body
 
 searchResult.issues.each { Map issue ->
-    logger.info("Commented on ${searchResult.issues.size()} issues")
+    logger.debug("Performed action on issue")
 }
 
 logger.info("Iterated over ${searchResult.issues.size()} issues")
 
-logger.info("Event -> ${event_name} - Completed")
+logger.trace("Event -> ${event_name} - Completed")

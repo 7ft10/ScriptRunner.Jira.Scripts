@@ -6,7 +6,8 @@
 // Last Updated By: Mike Burns
 //*********************************
 
-logger.info("Event info: Scheduled Job - Release Board Sync")
+def debug = (DEBUG_MODE == "true"); /* No access to logger levels -> workaround */ logger.metaClass.invokeMethod { name, args -> logger.metaClass.getMetaMethod(name, args)?.invoke(delegate, args); if ((name == "debug" || name == "trace") && debug == true) { def prefix = "** "; if (name == "trace") prefix = "## "; if (args.size() == 1) args[0] = prefix + args[0] else args = [prefix, *args]; logger.metaClass.getMetaMethod("info", args).invoke(logger, args); } }
+logger.trace("Event info: Scheduled Job - Release Board Sync")
 
 def formatDate(d) {
     if (d == null) return null
@@ -26,26 +27,22 @@ def projectCategories = ((List<Map>) Unirest.get("/rest/api/2/projectCategory")
         ]}
 
 def masterCategoryId = (projectCategories.find { (it as Map).name == 'Technology Portfolio' } as Map).id
-
 def masterProjectKey = ((Map)get("/rest/api/2/project/search?orderBy=category&expand=projectKeys&categoryId=${masterCategoryId}")
     .header('Content-Type', 'application/json')
     .asObject(Map)
     .body)
     .values
     .collect { it.key.toString() }[0]
+logger.debug("Master Project: ${masterProjectKey}")
 
-logger.info("masterProjectKey=${masterProjectKey}")
-
-def squadCategoryId = (projectCategories.find { (it as Map).name == 'Technology Squad' } as Map).id
-
-def targetProjectCodes = ((Map)get("/rest/api/2/project/search?orderBy=category&expand=projectKeys&categoryId=${squadCategoryId}")
+def targetCategoryId = (projectCategories.find { (it as Map).name == 'Technology Squad' } as Map).id
+def targetProjectCodes = ((Map)get("/rest/api/2/project/search?orderBy=category&expand=projectKeys&categoryId=${targetCategoryId}")
     .header('Content-Type', 'application/json')
     .asObject(Map)
     .body)
     .values
     .collect { it.key.toString() }
-
-logger.info("targetProjectCodes=${targetProjectCodes}")
+logger.debug("Target Project Codes: ${targetProjectCodes}")
 
 def sourceVersions = (List<Map<String, Map>>) Unirest.get("/rest/api/3/project/${masterProjectKey}/versions")
     .asObject(List)
@@ -54,7 +51,6 @@ def sourceVersions = (List<Map<String, Map>>) Unirest.get("/rest/api/3/project/$
 def sourceRBConfig = Unirest.get("/rest/api/2/project/${masterProjectKey}/properties/release-board-config")
     .asObject(Map)
     .body
-
 if (sourceRBConfig == null) {
     sourceRBConfig = [:]
 }
@@ -62,7 +58,6 @@ if (sourceRBConfig == null) {
 def sourceRBVersions = Unirest.get("/rest/api/2/project/${masterProjectKey}/properties/release-board-versions")
     .asObject(Map)
     .body
-
 if (sourceRBVersions == null) {
     sourceRBVersions = [:]
 }
@@ -93,13 +88,12 @@ targetProjectCodes.each { targetProjectKey ->
         .asObject(List)
         .body
 
-    logger.info("targetVersions: ${targetVersions}")
-    logger.info("sourceVersions: ${sourceVersions}")
+    logger.debug("Target Versions: ${targetVersions}")
+    logger.debug("Source Versions: ${sourceVersions}")
 
     def syncedVersions = sourceVersions.find { v ->
         return targetVersions.find { it.name == v.name } != null
     }
-
     if (syncedVersions == null) {
         throw new Error("Versions in ${targetProjectKey} are not in sync with ${masterProjectKey}. Cannot sync board configs.")
     }
@@ -107,7 +101,6 @@ targetProjectCodes.each { targetProjectKey ->
     def targetRBConfig = Unirest.get("/rest/api/2/project/${targetProjectKey}/properties/release-board-config")
         .asObject(Map)
         .body
-
     if (targetRBConfig == null) {
         targetRBConfig = [:]
     }
@@ -116,7 +109,6 @@ targetProjectCodes.each { targetProjectKey ->
         .asObject(Map)
         .body)
         .value
-
     if (targetRBVersions == null) {
         targetRBVersions = [:]
     }
@@ -141,15 +133,13 @@ targetProjectCodes.each { targetProjectKey ->
     if (boardsAreEqual) {
         logger.info("Boards ${masterProjectKey} & ${targetProjectKey} are in sync.")
     } else {
-        logger.info("Updated ${targetProjectKey} board details: ${updatedBoard}")
-
         def result = Unirest.put("/rest/api/3/project/${targetProjectKey}/properties/release-board-versions")
             .header("Content-Type", "application/json")
             .body(updatedBoard)
             .asString()
         assert result.status >= 200 && result.status < 300
-        logger.info("Updated.")
+        logger.info("Updated ${targetProjectKey} board details: ${updatedBoard}")
     }
 }
 
-logger.info("Event info: Scheduled Job - Release Board Sync - Completed")
+logger.trace("Event info: Scheduled Job - Release Board Sync - Completed")
