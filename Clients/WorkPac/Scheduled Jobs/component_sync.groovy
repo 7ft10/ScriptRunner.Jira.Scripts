@@ -6,7 +6,6 @@
 // Last Updated By: Mike Burns
 //*********************************
 
-def debug = (DEBUG_MODE == "true"); /* No access to logger levels -> workaround */ logger.metaClass.invokeMethod { name, args -> logger.metaClass.getMetaMethod(name, args)?.invoke(delegate, args); if ((name == "debug" || name == "trace") && debug == true) { def prefix = "** "; if (name == "trace") prefix = "## "; if (args.size() == 1) args[0] = prefix + args[0] else args = [prefix, *args]; logger.metaClass.getMetaMethod("info", args).invoke(logger, args); } }
 logger.trace("Event info: Scheduled Job - Component Sync")
 
 def projectCategories = ((List<Map>) Unirest.get("/rest/api/2/projectCategory")
