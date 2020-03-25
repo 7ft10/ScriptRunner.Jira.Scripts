@@ -25,7 +25,7 @@ if ($IsReleaseBuild) {
     $files | ForEach-Object {
         $file = $_
         Write-Progress -Activity "Building" -Status "Removing comments from $($file.BaseName).$($file.Extension)" -percentComplete ($i++ / $files.Count * 100)
-        $content = (Get-Content $file) | % { $_ -Replace "(?m)(?:^//.*)", "" } | % { $_ -Replace "(?m)(?:/\*(.*)/*\/)", "" } | ? {$_.Trim() -ne "" }
+        $content = (Get-Content $file) | ForEach-Object { $_ -Replace "(?m)(?:^//.*)", "" } | ForEach-Object { $_ -Replace "(?m)(?:/\*(.*)/*\/)", "" } | Where-Object {$_.Trim() -ne "" }
         Set-Content -Path $file -Value $content.Trim()
         Write-Progress -Activity "Building" -Status "Joining dot line breaks in $($file.BaseName).$($file.Extension)" -percentComplete ($i / $files.Count * 100)
         $content = ((Get-Content $file -Raw) -Replace "`r`n\.", ".") -Replace "`r`n}", " }"
