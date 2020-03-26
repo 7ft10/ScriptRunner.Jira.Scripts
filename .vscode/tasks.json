@@ -44,6 +44,10 @@
             "kind": "build",
             "isDefault": true
         },
+        "presentation": {
+            "reveal": "always",
+            "panel": "shared"
+        },
         "problemMatcher": []
     }, {
         "label": "Build (Debug)",
@@ -53,6 +57,10 @@
         "group": {
             "kind": "build",
             "isDefault": true
+        },
+        "presentation": {
+            "reveal": "always",
+            "panel": "shared"
         },
         "problemMatcher": []
     }]

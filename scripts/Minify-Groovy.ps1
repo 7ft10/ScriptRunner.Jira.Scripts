@@ -14,7 +14,7 @@ $fileSB = New-Object System.Text.StringBuilder
     | Where-Object { $_.Trim() -ne "" } `
     | ForEach-Object { [void]$fileSB.AppendLine($_.Trim()) }
 
-$newFile = $fileSB.ToString()
+## remove new line combination
 @(
     ( "`r`n.", "." ),
     ( ".`r`n", "." ),
@@ -35,6 +35,5 @@ $newFile = $fileSB.ToString()
     ( "`r`n}", " }"),
     ( "{`r`n", "{ " ),
     ( "`r`n", "; " )
-) | ForEach-Object { $newFile = $newFile.Replace($_[0], $_[1]) }
-##$newFile = $newFile -Replace "[\)]\s*`r`n", "); "
-Set-Content -Path $file -Value $newFile.Trim()
+) | ForEach-Object { [void]$fileSB.Replace($_[0], $_[1]) }
+Set-Content -Path $file -Value $fileSB.ToString().Trim()
