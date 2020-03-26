@@ -15,6 +15,7 @@ def formatDate(d) {
     return date.format("dd/MM/yyyy")
 }
 
+// get the list of project categories
 def projectCategories = ((List<Map>) Unirest.get("/rest/api/2/projectCategory")
     .header('Content-Type', 'application/json')
     .asObject(List)
@@ -25,6 +26,7 @@ def projectCategories = ((List<Map>) Unirest.get("/rest/api/2/projectCategory")
             "name": it.name.toString()?: "",
         ]}
 
+// find the master project
 def masterCategoryId = (projectCategories.find { (it as Map).name == 'Technology Portfolio' } as Map).id
 def masterProjectKey = ((Map)get("/rest/api/2/project/search?orderBy=category&expand=projectKeys&categoryId=${masterCategoryId}")
     .header('Content-Type', 'application/json')
@@ -34,6 +36,7 @@ def masterProjectKey = ((Map)get("/rest/api/2/project/search?orderBy=category&ex
     .collect { it.key.toString() }[0]
 logger.debug("Master Project: ${masterProjectKey}")
 
+// find the target projects
 def targetCategoryId = (projectCategories.find { (it as Map).name == 'Technology Squad' } as Map).id
 def targetProjectCodes = ((Map)get("/rest/api/2/project/search?orderBy=category&expand=projectKeys&categoryId=${targetCategoryId}")
     .header('Content-Type', 'application/json')
@@ -43,10 +46,12 @@ def targetProjectCodes = ((Map)get("/rest/api/2/project/search?orderBy=category&
     .collect { it.key.toString() }
 logger.debug("Target Project Codes: ${targetProjectCodes}")
 
+// find the master versions
 def sourceVersions = (List<Map<String, Map>>) Unirest.get("/rest/api/3/project/${masterProjectKey}/versions")
     .asObject(List)
     .body
 
+// and master release board configurations (from release board app)
 def sourceRBConfig = Unirest.get("/rest/api/2/project/${masterProjectKey}/properties/release-board-config")
     .asObject(Map)
     .body
@@ -54,6 +59,7 @@ if (sourceRBConfig == null) {
     sourceRBConfig = [:]
 }
 
+// and master release board versions (from release board app)
 def sourceRBVersions = Unirest.get("/rest/api/2/project/${masterProjectKey}/properties/release-board-versions")
     .asObject(Map)
     .body

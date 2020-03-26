@@ -38,7 +38,7 @@
     "tasks": [{
         "label": "Build (Release)",
         "type": "shell",
-        "command": "${workspaceFolder}\\.vscode\\build.ps1",
+        "command": "${workspaceFolder}\\scripts\\build.ps1",
         "args": ["$True"],
         "group": {
             "kind": "build",
@@ -48,7 +48,7 @@
     }, {
         "label": "Build (Debug)",
         "type": "shell",
-        "command": "${workspaceFolder}\\.vscode\\build.ps1",
+        "command": "${workspaceFolder}\\scripts\\build.ps1",
         "args": ["$False"],
         "group": {
             "kind": "build",

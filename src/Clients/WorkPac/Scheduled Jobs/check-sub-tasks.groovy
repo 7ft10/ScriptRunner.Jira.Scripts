@@ -24,7 +24,7 @@ def searchReq = Unirest.get("/rest/api/2/search")
         .queryString("fields", "key")
         .asObject(Map)
 assert searchReq.status == 200
-Map searchResult = searchReq.body
+def searchResult = (Map) searchReq.body
 
 searchResult.issues.each { Map issue ->
     def commentResp = Unirest.post("/rest/api/2/issue/${issue.key}/comment")

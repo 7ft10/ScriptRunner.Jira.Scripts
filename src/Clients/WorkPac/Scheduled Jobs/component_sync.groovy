@@ -90,6 +90,8 @@ targetProjectCodes.each { String projectCode ->
                 assert result.status >= 200 && result.status < 300
                 logger.info("Updated component: ${masterComponent.name}")
             }
+
+            // if updated correctly then remove from the list of components to delete (used below)
             projectComponents.remove(projectComponent)
         }
     }
@@ -101,7 +103,7 @@ targetProjectCodes.each { String projectCode ->
             .body
 
         if (related.issueCount == 0) {
-            // delete
+            // delete - can only delete if there are no related issues
             def result = Unirest.delete("/rest/api/2/component/${pc.id}")
                 .header("Content-Type", "application/json")
                 .asString()
@@ -109,10 +111,10 @@ targetProjectCodes.each { String projectCode ->
             logger.info("Deleted Component: ${pc.name}")
         } else {
             if (pc.name.endsWith("- NOT IN MASTER - DELETE")) {
-                // cannot delete issues attached
+                // cannot delete issues attached - if already updated then continue
                 logger.warn("Unable to delete component ${pc.name} -> name already updated")
             } else {
-                // update name
+                // update name - if has related issues then it cannot be deleted so write a not in the name
                 def newName = pc.name + "- NOT IN MASTER - DELETE"
                 def result = Unirest.put("/rest/api/2/component/${pc.id}")
                     .header("Content-Type", "application/json")

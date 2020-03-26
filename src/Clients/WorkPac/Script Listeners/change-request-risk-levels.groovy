@@ -1,5 +1,13 @@
+// ********************************
+// This groovy script automatically selects the risk level based on impact and experience
+//
+// Created By: Mike Burns
+// Last Updated By: Mike Burns
+//*********************************
+
 logger.trace("Event -> ${issue_event_type_name}")
 
+// risk matrix
 def riskCalculator = [
     [experience: "No Experience",                       impact: "Extensive / Widespread",   risk: "Critical"],
     [experience: "No Experience",                       impact: "Significant / Large",      risk: "Critical"],
@@ -36,7 +44,8 @@ def updateRequired = null
 if (riskLevelField != null && impactField != null && experienceField != null) {
 
     if (issue_event_type_name == "issue_created") {
-        updateRequired = true // potentially
+        // potentially
+        updateRequired = true
     } else if (issue_event_type_name != "issue_created") {
         logger.info("Change log -> ${changelog}")
         updateRequired = changelog?.items.find {
@@ -54,15 +63,18 @@ if (riskLevelField != null && impactField != null && experienceField != null) {
 
     def impactValue = (issue.fields[impactField.id] as Map)?.value
     def experienceValue = (issue.fields[experienceField.id] as Map)?.value
-    def calculatedRiskLevel = (riskCalculator.find { it.experience == experienceValue && it.impact == impactValue })?.risk
 
+    // find the risk level based on the experience and impact - look up the risk matrix
+    def calculatedRiskLevel = (riskCalculator.find { it.experience == experienceValue && it.impact == impactValue })?.risk
     logger.debug("Risk calculation -> ${impactValue} x ${experienceValue} = ${calculatedRiskLevel}")
 
     if (calculatedRiskLevel != null) {
         def riskLevelValue = (issue.fields[riskLevelField.id] as Map)?.value
+        // if already set correctly then return
         if (riskLevelValue == calculatedRiskLevel) {
             logger.info("Risk level set correctly -> ${riskLevelValue}")
         } else {
+            // otherwise update the risk level
             def result = Unirest.put("/rest/api/2/issue/${issue.key}?notifyUsers=false")
                 .header("Content-Type", "application/json")
                 .body([

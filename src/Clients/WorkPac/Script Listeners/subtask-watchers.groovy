@@ -1,3 +1,10 @@
+// ********************************
+// This groovy script ass the watchers of the parent as watchers of the sub-tasks
+//
+// Created By: Mike Burns
+// Last Updated By: Mike Burns
+//*********************************
+
 logger.trace("Event -> ${issue_event_type_name}")
 
 if (!issue.fields.issuetype.subtask) {
