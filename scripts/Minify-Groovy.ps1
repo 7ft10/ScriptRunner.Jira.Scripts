@@ -36,4 +36,6 @@ $fileSB = New-Object System.Text.StringBuilder
     ( "{`r`n", "{ " ),
     ( "`r`n", "; " )
 ) | ForEach-Object { [void]$fileSB.Replace($_[0], $_[1]) }
+Set-ItemProperty $file.FullName -name IsReadOnly -value $false
 Set-Content -Path $file -Value $fileSB.ToString().Trim()
+Set-ItemProperty $file.FullName -name IsReadOnly -value $true
