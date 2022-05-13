@@ -1,6 +1,6 @@
-# ScriptRunner-For-Jira-Cloud
+# ScriptRunner.Jira.Scripts
 
-SMExDigital's collection of ScriptRunner for Jira cloud groovy scripts.
+Copy of SMExDigital's collection of ScriptRunner for Jira cloud groovy scripts.
 
 Refer to [Adaptavist ScriptRunner doco](http://scriptrunner-docs.connect.adaptavist.com/jiracloud/) for more information.
 
@@ -14,5 +14,3 @@ Refer to [Adaptavist ScriptRunner doco](http://scriptrunner-docs.connect.adaptav
   - Templates and generic Groovy scripts used within ScriptRunner's script listeners.
 - Script Validators
   - Templates and generic Code snippets used as validators in workflows.
-
-Please contact [SMExDigital](https://www.smexdigitial.com) for more details on using these scripts.
